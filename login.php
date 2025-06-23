@@ -1,0 +1,1167 @@
+<?php
+require_once 'config/database.php';
+session_start();
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->execute([$username]);
+    $user = $stmt->fetch();
+
+    if ($user && password_verify($password, $user['password'])) {
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['username'] = $user['username'];
+        
+        $redirect_url = $user['role'] == 'admin' ? 'admin/dashboard.php' : 'user/dashboard.php';
+        echo json_encode(['success' => true, 'redirect' => $redirect_url, 'role' => $user['role']]);
+        exit();
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Invalid username or password']);
+        exit();
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PGOM Facilities</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #198754;
+            --primary-dark: #0f5132;
+            --primary-light: #e8f5e9;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand:hover {
+            color: var(--primary-dark);
+            transform: scale(1.02);
+        }
+
+        .navbar-brand img {
+            height: 50px;
+            width: auto;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand span {
+            font-size: 1.5rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .nav-link {
+            color: #344767;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+            border-radius: 8px;
+        }
+
+        .nav-link.active {
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+            border-radius: 8px;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .spinner-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+
+        .spinner {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 8px solid transparent;
+            border-top: 8px solid #198754;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner-inner {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border: 8px solid transparent;
+            border-top: 8px solid #ffffff;
+            border-radius: 50%;
+            animation: spin-reverse 0.8s linear infinite;
+            top: 10px;
+            left: 10px;
+        }
+
+        .spinner-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(25, 135, 84, 0.2);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading-text {
+            color: #ffffff;
+            font-size: 24px;
+            margin-top: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
+            opacity: 0.9;
+            animation: text-fade 2s ease-in-out infinite;
+        }
+
+        .role-text {
+            color: #198754;
+            font-size: 20px;
+            margin-top: 10px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: role-reveal 0.5s ease-out forwards 1s;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-reverse {
+            0% { transform: rotate(360deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+
+        @keyframes text-fade {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        @keyframes role-reveal {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error-animation {
+            animation: shake 0.5s ease-in-out, fade-out 4s ease-in-out forwards;
+        }
+
+        .error-text {
+            color: #dc3545;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            animation: error-fade-in 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        @keyframes error-fade-in {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fade-out {
+            0%, 80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Login Container Styles */
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        }
+
+        .login-container img {
+            height: 120px;
+            width: auto;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .login-container img:hover {
+            transform: scale(1.05);
+        }
+
+        .login-container h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        /* Form Styles */
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: #f8f9fa;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.15);
+            background-color: white;
+        }
+
+        .form-control::placeholder {
+            color: #6c757d;
+            opacity: 0.7;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            min-height: 48px;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(25, 135, 84, 0.3);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+        }
+
+        .btn-success:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            border-radius: 12px;
+            border: none;
+            font-weight: 500;
+        }
+
+        /* Forgot Password Link */
+        .forgot-password-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .forgot-password-link:hover {
+            color: var(--primary-dark);
+            background-color: var(--primary-light);
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+        .forgot-password-link:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0.75rem 1rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .navbar-brand img {
+                height: 40px;
+            }
+            
+            .navbar-brand span {
+                font-size: 1.2rem;
+            }
+            
+            .login-container {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+                border-radius: 16px;
+                max-width: 100%;
+            }
+            
+            .login-container img {
+                height: 100px;
+                margin-bottom: 1rem;
+            }
+            
+            .login-container h2 {
+                font-size: 1.75rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .form-control {
+                padding: 0.7rem 0.9rem;
+                font-size: 0.95rem;
+            }
+            
+            .btn-success {
+                padding: 0.7rem 1.2rem;
+                font-size: 0.95rem;
+                min-height: 44px;
+            }
+            
+            .form-label {
+                font-size: 0.9rem;
+            }
+            
+            .forgot-password-link {
+                font-size: 0.85rem;
+                padding: 0.4rem 0.8rem;
+            }
+            
+            .loading-text {
+                font-size: 20px;
+            }
+            
+            .role-text {
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .navbar {
+                padding: 0.5rem 0.75rem;
+            }
+            
+            .navbar-brand {
+                gap: 0.75rem;
+            }
+            
+            .navbar-brand img {
+                height: 35px;
+            }
+            
+            .navbar-brand span {
+                font-size: 1rem;
+            }
+            
+            .login-container {
+                padding: 1.5rem 1rem;
+                margin: 0.5rem;
+                border-radius: 12px;
+            }
+            
+            .login-container img {
+                height: 80px;
+                margin-bottom: 0.75rem;
+            }
+            
+            .login-container h2 {
+                font-size: 1.5rem;
+                margin-bottom: 1.25rem;
+            }
+            
+            .form-control {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.9rem;
+                border-radius: 10px;
+            }
+            
+            .btn-success {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+                min-height: 42px;
+                border-radius: 10px;
+            }
+            
+            .form-label {
+                font-size: 0.85rem;
+                margin-bottom: 0.4rem;
+            }
+            
+            .forgot-password-link {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.6rem;
+            }
+            
+            .loading-text {
+                font-size: 18px;
+                margin-top: 15px;
+            }
+            
+            .role-text {
+                font-size: 14px;
+                margin-top: 8px;
+            }
+            
+            .spinner-container {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .spinner {
+                width: 80px;
+                height: 80px;
+                border-width: 6px;
+            }
+            
+            .spinner-inner {
+                width: 64px;
+                height: 64px;
+                border-width: 6px;
+                top: 8px;
+                left: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .navbar {
+                padding: 0.4rem 0.5rem;
+            }
+            
+            .navbar-brand img {
+                height: 30px;
+            }
+            
+            .navbar-brand span {
+                font-size: 0.9rem;
+            }
+            
+            .login-container {
+                padding: 1.25rem 0.75rem;
+                margin: 0.25rem;
+                border-radius: 10px;
+            }
+            
+            .login-container img {
+                height: 70px;
+                margin-bottom: 0.5rem;
+            }
+            
+            .login-container h2 {
+                font-size: 1.25rem;
+                margin-bottom: 1rem;
+            }
+            
+            .form-control {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.85rem;
+                border-radius: 8px;
+            }
+            
+            .btn-success {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.85rem;
+                min-height: 40px;
+                border-radius: 8px;
+            }
+            
+            .form-label {
+                font-size: 0.8rem;
+                margin-bottom: 0.3rem;
+            }
+            
+            .forgot-password-link {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .loading-text {
+                font-size: 16px;
+                margin-top: 12px;
+            }
+            
+            .role-text {
+                font-size: 12px;
+                margin-top: 6px;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .navbar-brand span {
+                font-size: 0.8rem;
+            }
+            
+            .login-container {
+                padding: 1rem 0.5rem;
+            }
+            
+            .login-container img {
+                height: 60px;
+            }
+            
+            .login-container h2 {
+                font-size: 1.1rem;
+            }
+            
+            .form-control {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            
+            .btn-success {
+                padding: 0.4rem 0.7rem;
+                font-size: 0.8rem;
+                min-height: 38px;
+            }
+        }
+        
+        /* Landscape orientation for mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .navbar {
+                padding: 0.3rem 0.5rem;
+                margin-bottom: 0.25rem;
+            }
+            
+            .navbar-brand img {
+                height: 25px;
+            }
+            
+            .navbar-brand span {
+                font-size: 0.8rem;
+            }
+            
+            .login-container {
+                padding: 1rem 1.5rem;
+                margin: 0.25rem;
+            }
+            
+            .login-container img {
+                height: 50px;
+                margin-bottom: 0.5rem;
+            }
+            
+            .login-container h2 {
+                font-size: 1.1rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .form-label {
+                margin-bottom: 0.2rem;
+            }
+            
+            .mb-3 {
+                margin-bottom: 0.75rem !important;
+            }
+            
+            .mb-4 {
+                margin-bottom: 1rem !important;
+            }
+        }
+        
+        /* Touch-friendly improvements */
+        .btn, .form-control {
+            min-height: 44px;
+        }
+        
+        /* Prevent zoom on input focus (iOS) */
+        @media screen and (-webkit-min-device-pixel-ratio: 0) {
+            .form-control {
+                font-size: 16px;
+            }
+        }
+
+        /* Forgot Password Modal Styles */
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #e9ecef;
+            padding: 1.5rem 1.5rem 1rem;
+        }
+
+        .modal-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal .form-control {
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+        }
+
+        .modal .btn {
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            min-height: 44px;
+        }
+
+        .modal .btn-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .modal .btn-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .form-text {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        /* Responsive Modal */
+        @media (max-width: 576px) {
+            .modal-dialog {
+                margin: 0.5rem;
+            }
+            
+            .modal-content {
+                border-radius: 12px;
+            }
+            
+            .modal-header {
+                padding: 1rem 1rem 0.75rem;
+            }
+            
+            .modal-title {
+                font-size: 1rem;
+            }
+            
+            .modal-body {
+                padding: 1rem;
+            }
+            
+            .modal .form-control {
+                padding: 0.6rem 0.8rem;
+                font-size: 0.9rem;
+                border-radius: 8px;
+            }
+            
+            .modal .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+                min-height: 42px;
+                border-radius: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-dialog {
+                margin: 0.25rem;
+            }
+            
+            .modal-header {
+                padding: 0.75rem 0.75rem 0.5rem;
+            }
+            
+            .modal-title {
+                font-size: 0.9rem;
+            }
+            
+            .modal-body {
+                padding: 0.75rem;
+            }
+            
+            .modal .form-control {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.85rem;
+                border-radius: 6px;
+            }
+            
+            .modal .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+                min-height: 40px;
+                border-radius: 6px;
+            }
+            
+            .form-text {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <div class="navbar-brand">
+                <img src="images/logo.png" alt="PGOM Logo">
+                <span>PGOM FACILITIES</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="loading-overlay">
+        <div class="spinner-container">
+            <div class="spinner-pulse"></div>
+            <div class="spinner"></div>
+            <div class="spinner-inner"></div>
+        </div>
+        <div class="loading-text">Authenticating</div>
+        <div class="role-text"></div>
+    </div>
+
+    <div class="container-fluid d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 80px); padding: 1rem;">
+        <div class="login-container">
+            <div class="text-center mb-4">
+                <img src="images/logo.png" alt="PGOM Logo" class="mb-3">
+                <h2>Login</h2>
+            </div>
+            <div class="alert alert-danger" id="error-message" style="display: none;"></div>
+            
+            <form id="login-form" method="POST">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+                <div class="mb-4">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </button>
+                </div>
+            </form>
+            
+            <div class="text-center mt-3">
+                <a href="#" class="forgot-password-link" onclick="showForgotPassword()">
+                    <i class="bi bi-question-circle me-1"></i>Forgot Password?
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="forgotPasswordModalLabel">
+                        <i class="bi bi-shield-lock me-2"></i>Forgot Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Step 1: Email Input -->
+                    <div id="emailStep" style="display: block;">
+                        <p class="text-muted mb-3">Enter your email address to receive a verification code.</p>
+                        <form id="forgotPasswordForm">
+                            <div class="mb-3">
+                                <label for="resetEmail" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="resetEmail" name="email" placeholder="Enter your email address" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send me-2"></i>Send Verification Code
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Step 2: Code Verification -->
+                    <div id="codeStep" style="display: none;">
+                        <p class="text-muted mb-3">Enter the verification code sent to your email.</p>
+                        <form id="verifyCodeForm">
+                            <div class="mb-3">
+                                <label for="verificationCode" class="form-label">Verification Code</label>
+                                <input type="text" class="form-control" id="verificationCode" name="code" placeholder="Enter 6-digit code" maxlength="6" required>
+                                <div class="form-text">Check your email for the verification code</div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-2"></i>Verify Code
+                                </button>
+                            </div>
+                        </form>
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-link btn-sm" onclick="resendCode()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: New Password -->
+                    <div id="passwordStep" style="display: none;">
+                        <p class="text-muted mb-3">Enter your new password.</p>
+                        <form id="newPasswordForm">
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="newPassword" name="password" placeholder="Enter new password" required>
+                                <div class="form-text">Password must be at least 8 characters long</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="Confirm new password" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-shield-check me-2"></i>Reset Password
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const errorMessage = document.getElementById('error-message');
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        const formData = new FormData(form);
+
+        fetch('login.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadingOverlay.style.display = 'flex';
+                const loadingText = document.querySelector('.loading-text');
+                const roleText = document.querySelector('.role-text');
+
+                setTimeout(() => {
+                    loadingText.textContent = 'Welcome';
+                    setTimeout(() => {
+                        roleText.textContent = `Logging in as ${data.role === 'admin' ? 'Administrator' : 'User'}`;
+                        setTimeout(() => {
+                            window.location.href = data.redirect;
+                        }, 1500);
+                    }, 1500);
+                }, 2000);
+            } else {
+                errorMessage.textContent = data.message;
+                errorMessage.style.display = 'block';
+                errorMessage.classList.add('error-animation');
+                setTimeout(() => {
+                    errorMessage.classList.remove('error-animation');
+                    errorMessage.style.display = 'none';
+                }, 4000);
+            }
+        })
+        .catch(error => {
+            errorMessage.textContent = 'An error occurred. Please try again.';
+            errorMessage.style.display = 'block';
+        });
+    });
+
+    function showForgotPassword() {
+        // Reset modal to first step
+        document.getElementById('emailStep').style.display = 'block';
+        document.getElementById('codeStep').style.display = 'none';
+        document.getElementById('passwordStep').style.display = 'none';
+        
+        // Clear forms
+        document.getElementById('forgotPasswordForm').reset();
+        document.getElementById('verifyCodeForm').reset();
+        document.getElementById('newPasswordForm').reset();
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
+        modal.show();
+    }
+
+    // Handle forgot password form submission
+    document.getElementById('forgotPasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('resetEmail').value;
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading state
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+        submitBtn.disabled = true;
+        
+        // Send request to backend
+        const formData = new FormData();
+        formData.append('action', 'send_code');
+        formData.append('email', email);
+        
+        fetch('forgot_password.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                
+                // Move to code verification step
+                document.getElementById('emailStep').style.display = 'none';
+                document.getElementById('codeStep').style.display = 'block';
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred. Please try again.', 'error');
+        })
+        .finally(() => {
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+
+    // Handle code verification form submission
+    document.getElementById('verifyCodeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('resetEmail').value;
+        const code = document.getElementById('verificationCode').value;
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Show loading state
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+        submitBtn.disabled = true;
+        
+        // Send request to backend
+        const formData = new FormData();
+        formData.append('action', 'verify_code');
+        formData.append('email', email);
+        formData.append('code', code);
+        
+        fetch('forgot_password.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                
+                // Move to password reset step
+                document.getElementById('codeStep').style.display = 'none';
+                document.getElementById('passwordStep').style.display = 'block';
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred. Please try again.', 'error');
+        })
+        .finally(() => {
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+
+    // Handle new password form submission
+    document.getElementById('newPasswordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('resetEmail').value;
+        const code = document.getElementById('verificationCode').value;
+        const password = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Validate password
+        if (password.length < 8) {
+            showAlert('Password must be at least 8 characters long.', 'error');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            showAlert('Passwords do not match.', 'error');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Resetting...';
+        submitBtn.disabled = true;
+        
+        // Send request to backend
+        const formData = new FormData();
+        formData.append('action', 'reset_password');
+        formData.append('email', email);
+        formData.append('code', code);
+        formData.append('password', password);
+        formData.append('confirm_password', confirmPassword);
+        
+        fetch('forgot_password.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                
+                // Close modal after success
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+                    modal.hide();
+                }, 2000);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred. Please try again.', 'error');
+        })
+        .finally(() => {
+            // Reset button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+
+    // Resend code function
+    function resendCode() {
+        const email = document.getElementById('resetEmail').value;
+        const resendBtn = document.querySelector('button[onclick="resendCode()"]');
+        const originalText = resendBtn.innerHTML;
+        
+        resendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+        resendBtn.disabled = true;
+        
+        // Send request to backend
+        const formData = new FormData();
+        formData.append('action', 'resend_code');
+        formData.append('email', email);
+        
+        fetch('forgot_password.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred. Please try again.', 'error');
+        })
+        .finally(() => {
+            resendBtn.innerHTML = originalText;
+            resendBtn.disabled = false;
+        });
+    }
+
+    // Alert function for modal
+    function showAlert(message, type) {
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert at the top of modal body
+        const modalBody = document.querySelector('.modal-body');
+        modalBody.insertBefore(alertDiv, modalBody.firstChild);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

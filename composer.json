@@ -1,0 +1,16 @@
+{
+    "name": "almer/pgomfacilities_booking_inventory_system",
+    "autoload": {
+        "psr-4": {
+            "Almer\\PgomfacilitiesBookingInventorySystem\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "marvin"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^6.10"
+    }
+}
