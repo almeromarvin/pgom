@@ -1,23 +1,31 @@
 <?php
 
 require 'vendor/autoload.php';
-require_once 'config/mail_config.php';
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-function getMailer() {
-    $mail = new PHPMailer(true);
+$mail = new PHPMailer(true);
+try {
     // SMTP Server Configuration
     $mail->isSMTP();
-    $mail->Host       = SMTP_HOST;
+    $mail->Host       = 'smtp.gmail.com';
     $mail->SMTPAuth   = true;
-    $mail->Username   = SMTP_USERNAME;
-    $mail->Password   = SMTP_PASSWORD;
-    $mail->SMTPSecure = SMTP_SECURE;
-    $mail->Port       = SMTP_PORT;
-    $mail->setFrom(MAIL_FROM_EMAIL, MAIL_FROM_NAME);
-    $mail->isHTML(true);
-    return $mail;
-}
+    $mail->Username   = 'nabilishane@gmail.com';       // Your Gmail address
+    $mail->Password   = 'dbpd ugew hufw enrl';    // App password from Google
+    $mail->SMTPSecure = 'tls';
+    $mail->Port       = 587;
 
-?>
+    // Sender and Recipient
+    $mail->setFrom('nabilishane@gmail.com', 'PGOM Administrator');
+    // $mail->addAddress('almeromarvin482@gmail.com', 'Cool Friend');
+    // $mail->isHTML(true);
+    // $mail->Subject = 'Hello from PHPMailer!';
+    // $mail->Body    = '<h1>This is a test email sent using PHPMailer 🎉</h1>';
+    // $mail->AltBody = 'This is a test email sent using PHPMailer.';
+
+    // $mail->send();
+    // echo '✅ Email sent successfully, Ace!';
+} catch (Exception $e) {
+    echo "❌ Email could not be sent. Error: {$mail->ErrorInfo}";
+}

@@ -1,129 +1,107 @@
 <?php
 require_once 'config/database.php';
-require_once 'config/encryption_config.php';
 require_once 'mailer.php';
+
+// var_dump($mail);
+// require_once 'config/encryption_config.php';
+// require_once 'mailer.php';
 
 header('Content-Type: application/json');
 
-function encryptToken($token) {
-    $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length(ENCRYPTION_METHOD));
-    $encrypted = openssl_encrypt($token, ENCRYPTION_METHOD, ENCRYPTION_KEY, 0, $iv);
-    return base64_encode($iv . $encrypted);
-}
 
-function decryptToken($encryptedToken) {
-    $data = base64_decode($encryptedToken);
-    $ivLength = openssl_cipher_iv_length(ENCRYPTION_METHOD);
-    $iv = substr($data, 0, $ivLength);
-    $encrypted = substr($data, $ivLength);
-    return openssl_decrypt($encrypted, ENCRYPTION_METHOD, ENCRYPTION_KEY, 0, $iv);
-}
+if (isset($_POST['send_code'])) {
+    $email = $_POST['email'];
 
-function randomCode($length = 6) {
-    return str_pad(random_int(0, 999999), $length, '0', STR_PAD_LEFT);
-}
-
-$action = $_POST['action'] ?? '';
-$email = $_POST['email'] ?? '';
-
-if ($action === 'send_code' || $action === 'resend_code') {
-    // Check if email exists
-    $stmt = $pdo->prepare('SELECT id, username FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-    if (!$user) {
-        echo json_encode(['success' => false, 'message' => 'Email not found.']);
-        exit();
+    if (empty($email) || is_null($email)) {
+        echo json_encode(["status" => "error", "message" => "invalid Email"]);
+        exit;
     }
-    // Mark all previous tokens for this email as used
-    $pdo->prepare('UPDATE password_reset_tokens SET used = 1 WHERE email = ? AND used = 0')->execute([$email]);
-    // Generate code and encrypt it before storing
-    $code = randomCode();
-    $encryptedCode = encryptToken($code);
-    $expires_at = date('Y-m-d H:i:s', time() + 600); // 10 minutes from now
-    $pdo->prepare('INSERT INTO password_reset_tokens (user_id, email, token, expires_at, used) VALUES (?, ?, ?, ?, 0)')
-        ->execute([$user['id'], $email, $encryptedCode, $expires_at]);
-    // Send email with the original (unencrypted) code
-    $mail = getMailer();
-    $mail->clearAllRecipients();
-    $mail->addAddress($email, $user['username']);
-    $mail->Subject = $action === 'send_code' ? 'Your Password Reset Code' : 'Your Password Reset Code (Resent)';
-    $mail->Body = '<h2>Password Reset Request</h2><p>Your verification code is: <b>' . $code . '</b></p><p>This code will expire in 10 minutes.</p>';
-    $mail->AltBody = 'Your verification code is: ' . $code;
-    if ($mail->send()) {
-        echo json_encode(['success' => true, 'message' => 'Verification code sent to your email.']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to send email. Try again.']);
-    }
-    exit();
-}
 
-if ($action === 'verify_code') {
-    $code = $_POST['code'] ?? '';
-    // Get all unused, unexpired tokens for this email
-    $stmt = $pdo->prepare('SELECT * FROM password_reset_tokens WHERE email = ? AND used = 0 AND expires_at > NOW() ORDER BY id DESC');
-    $stmt->execute([$email]);
-    $tokens = $stmt->fetchAll();
-    
-    $validToken = null;
-    foreach ($tokens as $token) {
-        $decryptedToken = decryptToken($token['token']);
-        if ($decryptedToken === $code) {
-            $validToken = $token;
-            break;
+    // validate if the user is existing
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
+    $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+    $stmt->execute();
+
+    if ($stmt->rowCount() === 0) {
+        echo json_encode(["status" => "error", "message" => "Invalid Email"]);
+        exit;
+    }
+
+    $randomString = bin2hex(random_bytes(16));
+
+    // store the data first
+
+    $stmt = $pdo->prepare("INSERT INTO password_reset(email,token) VALUES(:email,:token)");
+    $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+    $stmt->bindParam(':token', $randomString, PDO::PARAM_STR);
+
+    if ($stmt->execute()) {
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Subject = 'Reset Password';
+        $mail->Body = '
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9;">
+                <h2 style="color: #333;">Password Reset Request</h2>
+                <p>Hello,</p>
+                <p>We received a request to reset your password. If you made this request, you can reset your password using the button below.</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="http://localhost/pgom/resetPassword.php?token=' . $randomString . '" 
+                    style="background-color: #007bff; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 5px; display: inline-block; font-size: 16px;">
+                        🔐 Reset Password
+                    </a>
+                </div>
+
+                <p>If you did not request a password reset, please ignore this email. Your account is still secure.</p>
+                <p>Thanks,<br><strong>PGOM Administrator</strong></p>
+            </div>';
+        $mail->AltBody = 'This is a test email sent using PHPMailer.';
+        if ($mail->send()) {
+            echo json_encode(["status" => "success", "message" => "Email Sent"]);
+            exit;
         }
     }
-    
-    if (!$validToken) {
-        echo json_encode(['success' => false, 'message' => 'Invalid or expired verification code.']);
-        exit();
-    }
-    
-    // Mark this token as used
-    $pdo->prepare('UPDATE password_reset_tokens SET used = 1 WHERE id = ?')->execute([$validToken['id']]);
-    // Store token id in session for password reset
-    session_start();
-    $_SESSION['reset_token_id'] = $validToken['id'];
-    $_SESSION['reset_email'] = $email;
-    echo json_encode(['success' => true, 'message' => 'Code verified.']);
-    exit();
+
+    echo json_encode(["status" => "errpr", "message" => "An Error Occured"]);
+    exit;
 }
 
-if ($action === 'reset_password') {
-    session_start();
-    $password = $_POST['password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
-    $token_id = $_SESSION['reset_token_id'] ?? null;
-    $reset_email = $_SESSION['reset_email'] ?? null;
-    if (!$token_id || !$reset_email || $reset_email !== $email) {
-        echo json_encode(['success' => false, 'message' => 'No verified reset request found. Please verify your code first.']);
-        exit();
+if (isset($_POST['resetPassword'])) {
+    $token = $_GET['token'];
+    $password = $_POST['password'];
+
+    $stmt = $pdo->prepare("SELECT * FROM password_reset WHERE token = :token");
+    $stmt->bindParam(':token', $token, PDO::PARAM_STR);
+    $stmt->execute();
+
+    // ✅ Check if the token exists
+    if ($stmt->rowCount() === 0) {
+        echo json_encode(["status" => "error", "message" => "Invalid or expired token"]);
+        exit;
     }
-    // Check that the token is still valid and used
-    $stmt = $pdo->prepare('SELECT * FROM password_reset_tokens WHERE id = ? AND email = ? AND used = 1 AND expires_at > NOW()');
-    $stmt->execute([$token_id, $email]);
-    $token = $stmt->fetch();
-    if (!$token) {
-        echo json_encode(['success' => false, 'message' => 'Verification code expired or invalid.']);
-        exit();
+
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $email = $result['email'];
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+    $updatePassword = $pdo->prepare("UPDATE users SET password = :password WHERE email = :email");
+    $updatePassword->bindParam(':password', $hashedPassword, PDO::PARAM_STR);
+    $updatePassword->bindParam(':email', $email, PDO::PARAM_STR);
+
+    if ($updatePassword->execute()) {
+        // ✅ Clean up token after success
+        $stmt = $pdo->prepare("DELETE FROM password_reset WHERE email = :email");
+        $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+        $stmt->execute();
+
+        echo json_encode(["status" => "success", "message" => "Password reset successfully"]);
+        exit;
     }
-    if (strlen($password) < 8) {
-        echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters.']);
-        exit();
-    }
-    if ($password !== $confirm_password) {
-        echo json_encode(['success' => false, 'message' => 'Passwords do not match.']);
-        exit();
-    }
-    // Update password
-    $hashed = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare('UPDATE users SET password = ? WHERE email = ?');
-    $stmt->execute([$hashed, $email]);
-    // Clean up session and tokens
-    unset($_SESSION['reset_token_id'], $_SESSION['reset_email']);
-    $pdo->prepare('UPDATE password_reset_tokens SET used = 1 WHERE id = ?')->execute([$token_id]);
-    echo json_encode(['success' => true, 'message' => 'Password reset successful. You can now log in.']);
-    exit();
+
+    echo json_encode(["status" => "error", "message" => "Failed to reset password"]);
+    exit;
 }
 
-echo json_encode(['success' => false, 'message' => 'Invalid request.']); 
+
+
+// echo $randomString = bin2hex(random_bytes(16));

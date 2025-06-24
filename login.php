@@ -6,13 +6,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Validate and sanitize input
     $username = isset($_POST['username']) ? trim($_POST['username']) : '';
     $password = isset($_POST['password']) ? $_POST['password'] : '';
-    
+
     // Basic validation
     if (empty($username) || empty($password)) {
         echo json_encode(['success' => false, 'message' => 'Username and password are required']);
         exit();
     }
-    
+
     // Sanitize username (only allow alphanumeric and common characters)
     if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) {
         echo json_encode(['success' => false, 'message' => 'Invalid username format']);
@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['role'] = $user['role'];
         $_SESSION['username'] = $user['username'];
-        
+
         $redirect_url = $user['role'] == 'admin' ? 'admin/dashboard.php' : 'user/dashboard.php';
         echo json_encode(['success' => true, 'redirect' => $redirect_url, 'role' => $user['role']]);
         exit();
@@ -39,6 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -62,7 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .navbar {
             background-color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             padding: 1rem 1.5rem;
             margin-bottom: 1rem;
         }
@@ -185,24 +186,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes spin-reverse {
-            0% { transform: rotate(360deg); }
-            100% { transform: rotate(0deg); }
+            0% {
+                transform: rotate(360deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-            100% { transform: scale(0.8); opacity: 0.5; }
+            0% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
         }
 
         @keyframes text-fade {
-            0%, 100% { opacity: 0.7; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.05); }
+
+            0%,
+            100% {
+                opacity: 0.7;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
         }
 
         @keyframes role-reveal {
@@ -226,26 +257,57 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-5px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(5px);
+            }
         }
 
         @keyframes error-fade-in {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes fade-out {
-            0%, 80% { opacity: 1; }
-            100% { opacity: 0; }
+
+            0%,
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
         }
 
         /* Login Container Styles */
         .login-container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
             padding: 2.5rem;
             width: 100%;
             max-width: 450px;
@@ -255,7 +317,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .login-container:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
         }
 
         .login-container img {
@@ -338,128 +400,128 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 padding: 0.75rem 1rem;
                 margin-bottom: 0.5rem;
             }
-            
+
             .navbar-brand img {
                 height: 40px;
             }
-            
+
             .navbar-brand span {
                 font-size: 1.2rem;
             }
-            
+
             .login-container {
                 padding: 2rem 1.5rem;
                 margin: 1rem;
                 border-radius: 16px;
                 max-width: 100%;
             }
-            
+
             .login-container img {
                 height: 100px;
                 margin-bottom: 1rem;
             }
-            
+
             .login-container h2 {
                 font-size: 1.75rem;
                 margin-bottom: 1.5rem;
             }
-            
+
             .form-control {
                 padding: 0.7rem 0.9rem;
                 font-size: 0.95rem;
             }
-            
+
             .btn-success {
                 padding: 0.7rem 1.2rem;
                 font-size: 0.95rem;
                 min-height: 44px;
             }
-            
+
             .form-label {
                 font-size: 0.9rem;
             }
-            
+
             .loading-text {
                 font-size: 20px;
             }
-            
+
             .role-text {
                 font-size: 16px;
             }
         }
-        
+
         @media (max-width: 576px) {
             .navbar {
                 padding: 0.5rem 0.75rem;
             }
-            
+
             .navbar-brand {
                 gap: 0.75rem;
             }
-            
+
             .navbar-brand img {
                 height: 35px;
             }
-            
+
             .navbar-brand span {
                 font-size: 1rem;
             }
-            
+
             .login-container {
                 padding: 1.5rem 1rem;
                 margin: 0.5rem;
                 border-radius: 12px;
             }
-            
+
             .login-container img {
                 height: 80px;
                 margin-bottom: 0.75rem;
             }
-            
+
             .login-container h2 {
                 font-size: 1.5rem;
                 margin-bottom: 1.25rem;
             }
-            
+
             .form-control {
                 padding: 0.6rem 0.8rem;
                 font-size: 0.9rem;
                 border-radius: 10px;
             }
-            
+
             .btn-success {
                 padding: 0.6rem 1rem;
                 font-size: 0.9rem;
                 min-height: 42px;
                 border-radius: 10px;
             }
-            
+
             .form-label {
                 font-size: 0.85rem;
                 margin-bottom: 0.4rem;
             }
-            
+
             .loading-text {
                 font-size: 18px;
                 margin-top: 15px;
             }
-            
+
             .role-text {
                 font-size: 14px;
                 margin-top: 8px;
             }
-            
+
             .spinner-container {
                 width: 80px;
                 height: 80px;
             }
-            
+
             .spinner {
                 width: 80px;
                 height: 80px;
                 border-width: 6px;
             }
-            
+
             .spinner-inner {
                 width: 64px;
                 height: 64px;
@@ -468,142 +530,143 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 left: 8px;
             }
         }
-        
+
         @media (max-width: 480px) {
             .navbar {
                 padding: 0.4rem 0.5rem;
             }
-            
+
             .navbar-brand img {
                 height: 30px;
             }
-            
+
             .navbar-brand span {
                 font-size: 0.9rem;
             }
-            
+
             .login-container {
                 padding: 1.25rem 0.75rem;
                 margin: 0.25rem;
                 border-radius: 10px;
             }
-            
+
             .login-container img {
                 height: 70px;
                 margin-bottom: 0.5rem;
             }
-            
+
             .login-container h2 {
                 font-size: 1.25rem;
                 margin-bottom: 1rem;
             }
-            
+
             .form-control {
                 padding: 0.5rem 0.7rem;
                 font-size: 0.85rem;
                 border-radius: 8px;
             }
-            
+
             .btn-success {
                 padding: 0.5rem 0.8rem;
                 font-size: 0.85rem;
                 min-height: 40px;
                 border-radius: 8px;
             }
-            
+
             .form-label {
                 font-size: 0.8rem;
                 margin-bottom: 0.3rem;
             }
-            
+
             .loading-text {
                 font-size: 16px;
                 margin-top: 12px;
             }
-            
+
             .role-text {
                 font-size: 12px;
                 margin-top: 6px;
             }
         }
-        
+
         @media (max-width: 360px) {
             .navbar-brand span {
                 font-size: 0.8rem;
             }
-            
+
             .login-container {
                 padding: 1rem 0.5rem;
             }
-            
+
             .login-container img {
                 height: 60px;
             }
-            
+
             .login-container h2 {
                 font-size: 1.1rem;
             }
-            
+
             .form-control {
                 padding: 0.4rem 0.6rem;
                 font-size: 0.8rem;
             }
-            
+
             .btn-success {
                 padding: 0.4rem 0.7rem;
                 font-size: 0.8rem;
                 min-height: 38px;
             }
         }
-        
+
         /* Landscape orientation for mobile */
         @media (max-height: 500px) and (orientation: landscape) {
             .navbar {
                 padding: 0.3rem 0.5rem;
                 margin-bottom: 0.25rem;
             }
-            
+
             .navbar-brand img {
                 height: 25px;
             }
-            
+
             .navbar-brand span {
                 font-size: 0.8rem;
             }
-            
+
             .login-container {
                 padding: 1rem 1.5rem;
                 margin: 0.25rem;
             }
-            
+
             .login-container img {
                 height: 50px;
                 margin-bottom: 0.5rem;
             }
-            
+
             .login-container h2 {
                 font-size: 1.1rem;
                 margin-bottom: 0.75rem;
             }
-            
+
             .form-label {
                 margin-bottom: 0.2rem;
             }
-            
+
             .mb-3 {
                 margin-bottom: 0.75rem !important;
             }
-            
+
             .mb-4 {
                 margin-bottom: 1rem !important;
             }
         }
-        
+
         /* Touch-friendly improvements */
-        .btn, .form-control {
+        .btn,
+        .form-control {
             min-height: 44px;
         }
-        
+
         /* Prevent zoom on input focus (iOS) */
         @media screen and (-webkit-min-device-pixel-ratio: 0) {
             .form-control {
@@ -612,6 +675,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     </style>
 </head>
+
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg">
@@ -640,7 +704,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <h2>Login</h2>
             </div>
             <div class="alert alert-danger" id="error-message" style="display: none;"></div>
-            
+
             <form id="login-form" method="POST">
                 <div class="mb-3">
                     <label for="username" class="form-label">Username</label>
@@ -665,51 +729,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
 
     <script>
-    document.getElementById('login-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const form = this;
-        const errorMessage = document.getElementById('error-message');
-        const loadingOverlay = document.querySelector('.loading-overlay');
-        const formData = new FormData(form);
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        fetch('login.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                loadingOverlay.style.display = 'flex';
-                const loadingText = document.querySelector('.loading-text');
-                const roleText = document.querySelector('.role-text');
+            const form = this;
+            const errorMessage = document.getElementById('error-message');
+            const loadingOverlay = document.querySelector('.loading-overlay');
+            const formData = new FormData(form);
 
-                setTimeout(() => {
-                    loadingText.textContent = 'Welcome';
-                    setTimeout(() => {
-                        roleText.textContent = `Logging in as ${data.role === 'admin' ? 'Administrator' : 'User'}`;
+            fetch('login.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadingOverlay.style.display = 'flex';
+                        const loadingText = document.querySelector('.loading-text');
+                        const roleText = document.querySelector('.role-text');
+
                         setTimeout(() => {
-                            window.location.href = data.redirect;
-                        }, 1500);
-                    }, 1500);
-                }, 2000);
-            } else {
-                errorMessage.textContent = data.message;
-                errorMessage.style.display = 'block';
-                errorMessage.classList.add('error-animation');
-                setTimeout(() => {
-                    errorMessage.classList.remove('error-animation');
-                    errorMessage.style.display = 'none';
-                }, 4000);
-            }
-        })
-        .catch(error => {
-            errorMessage.textContent = 'An error occurred. Please try again.';
-            errorMessage.style.display = 'block';
+                            loadingText.textContent = 'Welcome';
+                            setTimeout(() => {
+                                roleText.textContent = `Logging in as ${data.role === 'admin' ? 'Administrator' : 'User'}`;
+                                setTimeout(() => {
+                                    window.location.href = data.redirect;
+                                }, 1500);
+                            }, 1500);
+                        }, 2000);
+                    } else {
+                        errorMessage.textContent = data.message;
+                        errorMessage.style.display = 'block';
+                        errorMessage.classList.add('error-animation');
+                        setTimeout(() => {
+                            errorMessage.classList.remove('error-animation');
+                            errorMessage.style.display = 'none';
+                        }, 4000);
+                    }
+                })
+                .catch(error => {
+                    errorMessage.textContent = 'An error occurred. Please try again.';
+                    errorMessage.style.display = 'block';
+                });
         });
-    });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
