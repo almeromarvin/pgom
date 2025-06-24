@@ -3,8 +3,21 @@ require_once 'config/database.php';
 session_start();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    // Validate and sanitize input
+    $username = isset($_POST['username']) ? trim($_POST['username']) : '';
+    $password = isset($_POST['password']) ? $_POST['password'] : '';
+    
+    // Basic validation
+    if (empty($username) || empty($password)) {
+        echo json_encode(['success' => false, 'message' => 'Username and password are required']);
+        exit();
+    }
+    
+    // Sanitize username (only allow alphanumeric and common characters)
+    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid username format']);
+        exit();
+    }
 
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
     $stmt->execute([$username]);
@@ -319,31 +332,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-weight: 500;
         }
 
-        /* Forgot Password Link */
-        .forgot-password-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .forgot-password-link:hover {
-            color: var(--primary-dark);
-            background-color: var(--primary-light);
-            text-decoration: none;
-            transform: translateY(-1px);
-        }
-
-        .forgot-password-link:active {
-            transform: translateY(0);
-        }
-
         /* Responsive Design */
         @media (max-width: 768px) {
             .navbar {
@@ -389,11 +377,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             .form-label {
                 font-size: 0.9rem;
-            }
-            
-            .forgot-password-link {
-                font-size: 0.85rem;
-                padding: 0.4rem 0.8rem;
             }
             
             .loading-text {
@@ -454,11 +437,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             .form-label {
                 font-size: 0.85rem;
                 margin-bottom: 0.4rem;
-            }
-            
-            .forgot-password-link {
-                font-size: 0.8rem;
-                padding: 0.3rem 0.6rem;
             }
             
             .loading-text {
@@ -536,11 +514,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             .form-label {
                 font-size: 0.8rem;
                 margin-bottom: 0.3rem;
-            }
-            
-            .forgot-password-link {
-                font-size: 0.75rem;
-                padding: 0.25rem 0.5rem;
             }
             
             .loading-text {
@@ -637,128 +610,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 font-size: 16px;
             }
         }
-
-        /* Forgot Password Modal Styles */
-        .modal-content {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        }
-
-        .modal-header {
-            border-bottom: 1px solid #e9ecef;
-            padding: 1.5rem 1.5rem 1rem;
-        }
-
-        .modal-title {
-            color: var(--primary-color);
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .modal-body {
-            padding: 1.5rem;
-        }
-
-        .modal .form-control {
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-        }
-
-        .modal .btn {
-            border-radius: 10px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-            min-height: 44px;
-        }
-
-        .modal .btn-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-size: 0.85rem;
-        }
-
-        .modal .btn-link:hover {
-            color: var(--primary-dark);
-            text-decoration: underline;
-        }
-
-        .form-text {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-
-        /* Responsive Modal */
-        @media (max-width: 576px) {
-            .modal-dialog {
-                margin: 0.5rem;
-            }
-            
-            .modal-content {
-                border-radius: 12px;
-            }
-            
-            .modal-header {
-                padding: 1rem 1rem 0.75rem;
-            }
-            
-            .modal-title {
-                font-size: 1rem;
-            }
-            
-            .modal-body {
-                padding: 1rem;
-            }
-            
-            .modal .form-control {
-                padding: 0.6rem 0.8rem;
-                font-size: 0.9rem;
-                border-radius: 8px;
-            }
-            
-            .modal .btn {
-                padding: 0.6rem 1.2rem;
-                font-size: 0.9rem;
-                min-height: 42px;
-                border-radius: 8px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .modal-dialog {
-                margin: 0.25rem;
-            }
-            
-            .modal-header {
-                padding: 0.75rem 0.75rem 0.5rem;
-            }
-            
-            .modal-title {
-                font-size: 0.9rem;
-            }
-            
-            .modal-body {
-                padding: 0.75rem;
-            }
-            
-            .modal .form-control {
-                padding: 0.5rem 0.7rem;
-                font-size: 0.85rem;
-                border-radius: 6px;
-            }
-            
-            .modal .btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.85rem;
-                min-height: 40px;
-                border-radius: 6px;
-            }
-            
-            .form-text {
-                font-size: 0.75rem;
-            }
-        }
     </style>
 </head>
 <body>
@@ -805,85 +656,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </button>
                 </div>
             </form>
-            
             <div class="text-center mt-3">
-                <a href="#" class="forgot-password-link" onclick="showForgotPassword()">
+                <a href="forgot_password.php" class="forgot-password-link">
                     <i class="bi bi-question-circle me-1"></i>Forgot Password?
                 </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Forgot Password Modal -->
-    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="forgotPasswordModalLabel">
-                        <i class="bi bi-shield-lock me-2"></i>Forgot Password
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Step 1: Email Input -->
-                    <div id="emailStep" style="display: block;">
-                        <p class="text-muted mb-3">Enter your email address to receive a verification code.</p>
-                        <form id="forgotPasswordForm">
-                            <div class="mb-3">
-                                <label for="resetEmail" class="form-label">Email Address</label>
-                                <input type="email" class="form-control" id="resetEmail" name="email" placeholder="Enter your email address" required>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-send me-2"></i>Send Verification Code
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <!-- Step 2: Code Verification -->
-                    <div id="codeStep" style="display: none;">
-                        <p class="text-muted mb-3">Enter the verification code sent to your email.</p>
-                        <form id="verifyCodeForm">
-                            <div class="mb-3">
-                                <label for="verificationCode" class="form-label">Verification Code</label>
-                                <input type="text" class="form-control" id="verificationCode" name="code" placeholder="Enter 6-digit code" maxlength="6" required>
-                                <div class="form-text">Check your email for the verification code</div>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-circle me-2"></i>Verify Code
-                                </button>
-                            </div>
-                        </form>
-                        <div class="text-center mt-3">
-                            <button type="button" class="btn btn-link btn-sm" onclick="resendCode()">
-                                <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Step 3: New Password -->
-                    <div id="passwordStep" style="display: none;">
-                        <p class="text-muted mb-3">Enter your new password.</p>
-                        <form id="newPasswordForm">
-                            <div class="mb-3">
-                                <label for="newPassword" class="form-label">New Password</label>
-                                <input type="password" class="form-control" id="newPassword" name="password" placeholder="Enter new password" required>
-                                <div class="form-text">Password must be at least 8 characters long</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="confirmPassword" class="form-label">Confirm Password</label>
-                                <input type="password" class="form-control" id="confirmPassword" name="confirm_password" placeholder="Confirm new password" required>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-success">
-                                    <i class="bi bi-shield-check me-2"></i>Reset Password
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -932,234 +708,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             errorMessage.style.display = 'block';
         });
     });
-
-    function showForgotPassword() {
-        // Reset modal to first step
-        document.getElementById('emailStep').style.display = 'block';
-        document.getElementById('codeStep').style.display = 'none';
-        document.getElementById('passwordStep').style.display = 'none';
-        
-        // Clear forms
-        document.getElementById('forgotPasswordForm').reset();
-        document.getElementById('verifyCodeForm').reset();
-        document.getElementById('newPasswordForm').reset();
-        
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('forgotPasswordModal'));
-        modal.show();
-    }
-
-    // Handle forgot password form submission
-    document.getElementById('forgotPasswordForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('resetEmail').value;
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        
-        // Show loading state
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
-        submitBtn.disabled = true;
-        
-        // Send request to backend
-        const formData = new FormData();
-        formData.append('action', 'send_code');
-        formData.append('email', email);
-        
-        fetch('forgot_password.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message, 'success');
-                
-                // Move to code verification step
-                document.getElementById('emailStep').style.display = 'none';
-                document.getElementById('codeStep').style.display = 'block';
-            } else {
-                showAlert(data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('An error occurred. Please try again.', 'error');
-        })
-        .finally(() => {
-            // Reset button
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        });
-    });
-
-    // Handle code verification form submission
-    document.getElementById('verifyCodeForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('resetEmail').value;
-        const code = document.getElementById('verificationCode').value;
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        
-        // Show loading state
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
-        submitBtn.disabled = true;
-        
-        // Send request to backend
-        const formData = new FormData();
-        formData.append('action', 'verify_code');
-        formData.append('email', email);
-        formData.append('code', code);
-        
-        fetch('forgot_password.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message, 'success');
-                
-                // Move to password reset step
-                document.getElementById('codeStep').style.display = 'none';
-                document.getElementById('passwordStep').style.display = 'block';
-            } else {
-                showAlert(data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('An error occurred. Please try again.', 'error');
-        })
-        .finally(() => {
-            // Reset button
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        });
-    });
-
-    // Handle new password form submission
-    document.getElementById('newPasswordForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('resetEmail').value;
-        const code = document.getElementById('verificationCode').value;
-        const password = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        
-        // Validate password
-        if (password.length < 8) {
-            showAlert('Password must be at least 8 characters long.', 'error');
-            return;
-        }
-        
-        if (password !== confirmPassword) {
-            showAlert('Passwords do not match.', 'error');
-            return;
-        }
-        
-        // Show loading state
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Resetting...';
-        submitBtn.disabled = true;
-        
-        // Send request to backend
-        const formData = new FormData();
-        formData.append('action', 'reset_password');
-        formData.append('email', email);
-        formData.append('code', code);
-        formData.append('password', password);
-        formData.append('confirm_password', confirmPassword);
-        
-        fetch('forgot_password.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message, 'success');
-                
-                // Close modal after success
-                setTimeout(() => {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
-                    modal.hide();
-                }, 2000);
-            } else {
-                showAlert(data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('An error occurred. Please try again.', 'error');
-        })
-        .finally(() => {
-            // Reset button
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        });
-    });
-
-    // Resend code function
-    function resendCode() {
-        const email = document.getElementById('resetEmail').value;
-        const resendBtn = document.querySelector('button[onclick="resendCode()"]');
-        const originalText = resendBtn.innerHTML;
-        
-        resendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
-        resendBtn.disabled = true;
-        
-        // Send request to backend
-        const formData = new FormData();
-        formData.append('action', 'resend_code');
-        formData.append('email', email);
-        
-        fetch('forgot_password.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message, 'success');
-            } else {
-                showAlert(data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('An error occurred. Please try again.', 'error');
-        })
-        .finally(() => {
-            resendBtn.innerHTML = originalText;
-            resendBtn.disabled = false;
-        });
-    }
-
-    // Alert function for modal
-    function showAlert(message, type) {
-        // Create alert element
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        // Insert at the top of modal body
-        const modalBody = document.querySelector('.modal-body');
-        modalBody.insertBefore(alertDiv, modalBody.firstChild);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.remove();
-            }
-        }, 5000);
-    }
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

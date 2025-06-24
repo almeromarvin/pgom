@@ -511,8 +511,19 @@ usort($all_history, function($a, $b) {
                                             <div>
                                                 <div><strong><?php echo date('M d, Y', strtotime($row['start_time'])); ?></strong></div>
                                                 <div class="text-muted">
-                                                    <?php echo date('h:i A', strtotime($row['start_time'])); ?> - 
-                                                    <?php echo date('h:i A', strtotime($row['end_time'])); ?>
+                                                    <?php 
+                                                    if ($row['start_time'] !== 'N/A' && $row['end_time'] !== 'N/A' && strtotime($row['start_time']) && strtotime($row['end_time'])) {
+                                                        $start = strtotime($row['start_time']);
+                                                        $end = strtotime($row['end_time']);
+                                                        $diff = $end - $start;
+                                                        $hours = floor($diff / 3600);
+                                                        $minutes = floor(($diff % 3600) / 60);
+                                                        $duration = ($hours > 0 ? $hours . ' hr' . ($hours > 1 ? 's' : '') : '') . ($hours > 0 && $minutes > 0 ? ' ' : '') . ($minutes > 0 ? $minutes . ' min' . ($minutes > 1 ? 's' : '') : '');
+                                                        echo date('h:i A', $start) . ' - ' . date('h:i A', $end) . ' (' . ($duration ? $duration : '0 min') . ')';
+                                                    } else {
+                                                        echo 'N/A';
+                                                    }
+                                                    ?>
                                                 </div>
                                             </div>
                                         </td>
@@ -588,10 +599,21 @@ usort($all_history, function($a, $b) {
                                         </span>
                                     </div>
                                     <div class="detail-item">
-                                        <span class="detail-label">Time:</span>
+                                        <span class="detail-label">Booking Period:</span>
                                         <span class="detail-value">
-                                            <?php echo date('h:i A', strtotime($row['start_time'])); ?> - 
-                                            <?php echo date('h:i A', strtotime($row['end_time'])); ?>
+                                            <?php 
+                                            if ($row['start_time'] !== 'N/A' && $row['end_time'] !== 'N/A' && strtotime($row['start_time']) && strtotime($row['end_time'])) {
+                                                $start = strtotime($row['start_time']);
+                                                $end = strtotime($row['end_time']);
+                                                $diff = $end - $start;
+                                                $hours = floor($diff / 3600);
+                                                $minutes = floor(($diff % 3600) / 60);
+                                                $duration = ($hours > 0 ? $hours . ' hr' . ($hours > 1 ? 's' : '') : '') . ($hours > 0 && $minutes > 0 ? ' ' : '') . ($minutes > 0 ? $minutes . ' min' . ($minutes > 1 ? 's' : '') : '');
+                                                echo date('h:i A', $start) . ' - ' . date('h:i A', $end) . ' (' . ($duration ? $duration : '0 min') . ')';
+                                            } else {
+                                                echo 'N/A';
+                                            }
+                                            ?>
                                         </span>
                                     </div>
                                 </div>

@@ -143,8 +143,10 @@ CREATE TABLE `user_history` (
     `action_type` VARCHAR(50) NOT NULL,
     `admin_id` INT(11) NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`admin_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    `facility_name` VARCHAR(255) NULL,
+    `start_time` DATETIME NULL,
+    `end_time` DATETIME NULL,
+    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 10. EQUIPMENT ITEMS TABLE (Depends on equipment_groups)

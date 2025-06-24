@@ -64,6 +64,7 @@ try {
 // Handle form submission
 $success = false;
 $error = '';
+$show_step = 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facility_id'])) {
     $selected_facility_id = $_POST['facility_id'];
     // Validate and process form
@@ -102,12 +103,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facility_id'])) {
             }
         } else {
             $error = 'Request letter must be a PDF file.';
+            $show_step = 2;
         }
+    } else if (empty($_FILES['request_letter']['name']) || $_FILES['request_letter']['error'] === UPLOAD_ERR_NO_FILE) {
+        $error = 'Request letter is required and must be a PDF file.';
+        $show_step = 2;
     }
 
     // Simple validation
     if (!$start_time || !$end_time || !$event_date) {
         $error = 'Please fill in all required fields.';
+        $show_step = 0;
+    } else if (!$request_letter) {
+        $error = 'Request letter is required and must be a PDF file.';
+        $show_step = 2;
     } else {
         try {
             $pdo->beginTransaction();
@@ -932,7 +941,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facility_id'])) {
                     <?php if ($success): ?>
                         <div class="alert alert-success">Booking submitted successfully!</div>
                     <?php elseif ($error): ?>
-                        <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+                        <div class="alert alert-danger" id="serverErrorMsg"><?php echo htmlspecialchars($error); ?></div>
                     <?php endif; ?>
                     <!-- Stepper -->
                     <div class="stepper mb-4">
@@ -1044,7 +1053,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facility_id'])) {
                             <div class="row g-3 mb-3">
                                 <div class="col-md-8">
                                     <label class="form-label">Request letter (PDF)</label>
-                                    <input type="file" class="form-control" name="request_letter" accept="application/pdf">
+                                    <input type="file" class="form-control" name="request_letter" accept="application/pdf" required onchange="validatePDF(this)">
+                                    <small id="pdfError" class="text-danger" style="display:none;">PDF only</small>
                                 </div>
                             </div>
                             <div class="form-divider"></div>
@@ -1253,7 +1263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facility_id'])) {
                     document.querySelector('.step2'),
                     document.querySelector('.step3')
                 ];
-                let currentStep = 0;
+                let currentStep = <?php echo isset($error) && $error ? (isset($show_step) ? $show_step : 0) : 0; ?>;
                 function showStep(idx) {
                     steps.forEach((step, i) => step.style.display = i === idx ? '' : 'none');
                     stepIndicators.forEach((el, i) => el.classList.toggle('active', i === idx));
@@ -1349,6 +1359,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['facility_id'])) {
                     console.log('Form submitted!');
                     return true;
                 };
+
+                function validatePDF(input) {
+                    const file = input.files[0];
+                    const errorMsg = document.getElementById('pdfError');
+                    if (file && file.type !== 'application/pdf') {
+                        errorMsg.style.display = 'block';
+                        input.value = '';
+                    } else {
+                        errorMsg.style.display = 'none';
+                    }
+                }
+
+                // Hide server error message after 3 seconds
+                window.addEventListener('DOMContentLoaded', function() {
+                    var serverError = document.getElementById('serverErrorMsg');
+                    if (serverError) {
+                        setTimeout(function() {
+                            serverError.style.display = 'none';
+                        }, 3000);
+                    }
+                });
                 </script>
                 <?php endif; ?>
             </div>

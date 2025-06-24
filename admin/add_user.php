@@ -29,27 +29,28 @@ $error = '';
 
 // Handle Add User submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
-    $username = trim($_POST['username']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-    $role = $_POST['role'];
-    $email = trim($_POST['email']);
-    $name = trim($_POST['name']);
-    $suffix = trim($_POST['suffix']);
-    $birthday = $_POST['birthday'];
-    $gender = $_POST['gender'];
-    $phone_number = trim($_POST['phone_number']);
-    $position = trim($_POST['position']);
-    $address = trim($_POST['address']);
-    $valid_id_type = $_POST['valid_id_type'];
-    $valid_id_number = trim($_POST['valid_id_number']);
+    // Validate and sanitize all input fields
+    $username = isset($_POST['username']) ? trim($_POST['username']) : '';
+    $password = isset($_POST['password']) ? $_POST['password'] : '';
+    $confirm_password = isset($_POST['confirm_password']) ? $_POST['confirm_password'] : '';
+    $role = isset($_POST['role']) ? $_POST['role'] : '';
+    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $name = isset($_POST['name']) ? trim($_POST['name']) : '';
+    $suffix = isset($_POST['suffix']) ? trim($_POST['suffix']) : '';
+    $birthday = isset($_POST['birthday']) ? $_POST['birthday'] : '';
+    $gender = isset($_POST['gender']) ? $_POST['gender'] : '';
+    $phone_number = isset($_POST['phone_number']) ? trim($_POST['phone_number']) : '';
+    $position = isset($_POST['position']) ? trim($_POST['position']) : '';
+    $address = isset($_POST['address']) ? trim($_POST['address']) : '';
+    $valid_id_type = isset($_POST['valid_id_type']) ? $_POST['valid_id_type'] : '';
+    $valid_id_number = isset($_POST['valid_id_number']) ? trim($_POST['valid_id_number']) : '';
 
     // Validate required fields
     $required_fields = ['username', 'password', 'role', 'email', 'name', 'birthday', 'gender', 'phone_number', 'position', 'address', 'valid_id_type', 'valid_id_number'];
     $missing_fields = [];
     
     foreach ($required_fields as $field) {
-        if (empty($_POST[$field])) {
+        if (empty($$field)) {
             $missing_fields[] = ucfirst(str_replace('_', ' ', $field));
         }
     }
@@ -80,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
                 // Create notification for new user addition
                 $notification_title = "New User Account Created";
                 $notification_message = "A new user account has been created: {$name} ({$username}) - {$role}";
-                createNotification($pdo, $notification_title, $notification_message, 'user_added', 'add_user.php');
+                addNotification($notification_title, $notification_message, 'user_added', 'add_user.php');
                 
                 $message = "User created successfully!";
             } catch (PDOException $e) {
@@ -1551,12 +1552,12 @@ try {
                     const isSidebarVisible = sidebar && sidebar.classList.contains('show');
                     if (isSidebarVisible) {
                         closeSidebar();
-                    } else {
+                        } else {
                         openSidebar();
                     }
                 });
             }
-
+            
             if (sidebarOverlay) {
                 sidebarOverlay.addEventListener('click', closeSidebar);
             }
@@ -1567,14 +1568,14 @@ try {
                         if (window.innerWidth <= 768) {
                             closeSidebar();
                         }
-                    }
-                });
+                        }
+                    });
             }
-
+                
             window.addEventListener('resize', () => {
-                if (window.innerWidth > 768) {
+                    if (window.innerWidth > 768) {
                     closeSidebar();
-                }
+                            }
             });
 
             // --- All other jQuery-dependent code below ---
